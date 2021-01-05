@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "bisw"
+version = "0.1.0"
+description = "Bilingual Subword Segmentation for Neural Machine Translation (Deguchi et al., 2020)"
+authors = ["Hiroyuki Deguchi <deguchi@ai.cs.ehime-u.ac.jp>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+fairseq = "^0.10.1"
+sentencepiece = "^0.1.94"
+torch = "^1.6.0"
+numpy = "^1.19.4"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+bisw-parallel-sents-segmentation = "bisw.for_parallel_sents.segmentation:cli_main"
+bisw-input-sents-preprocess = "bisw.for_input_sents.preprocess:cli_main"
+bisw-input-sents-segmentation = "bisw.for_input_sents.segmentation:cli_main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "setuptools"]
+build-backend = "poetry.core.masonry.api"

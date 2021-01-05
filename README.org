@@ -1,0 +1,113 @@
+* Bilingual Subword Segmantation for Neural Machine Translation (Deguchi et al., 2020)
+This repository is an implementation of [[https://www.aclweb.org/anthology/2020.coling-main.378/][Bilingual Subword Segmentation for Neural Machine Translation (Deguchi et al., 2020)]].
+** Install
+- for pip users:
+#+BEGIN_SRC bash
+% git clone https://github.com/de9uch1/bilingual-subword.git
+% cd bilingual-subword/
+% pip install -e ./
+#+END_SRC
+
+- for poetry users:
+#+BEGIN_SRC bash
+% git clone https://github.com/de9uch1/bilingual-subword.git
+% cd bilingual-subword/
+% poetry install
+#+END_SRC
+
+** Usage (an example of Ja->En translation)
+*** 1. Train SentencePiece model and apply bilingual subword (BiSW) segmentation to training corpus
+#+BEGIN_SRC bash
+% mkdir data/
+% bisw-parallel-sents-segmentation \
+      -s ja -t en \
+      --trainpref examples/train \
+      --spm-dir spm/ \
+      --train-spm \  # train sentencepiece models
+      --src-vocab-size 36 \  # usually 8k, 16k, 32k, etc.
+      --joined-dictionary \
+      --nbest-size 5 \
+      --num-workers 8 \
+      --batch-size 1000 \
+      > data/train.tsv
+% cut -f1 data/train.tsv > data/train.ja
+% cut -f2 data/train.tsv > data/train.en
+
+# If you need bilingual subword segmented validation sets, run as follows:
+% bisw-parallel-sents-segmentation \
+      -s ja -t en \
+      --trainpref examples/valid \
+      --spm-dir spm/ \
+      --joined-dictionary \
+      --nbest-size 5 \
+      --num-workers 8 \
+      --batch-size 1000 \
+      > data/valid.tsv
+  cut -f1 data/valid.tsv > data/valid.ja
+  cut -f2 data/valid.tsv > data/valid.en
+#+END_SRC
+
+*** 2. Train a NMT model with =data/train.{ja,en}=
+
+*** 3. Next, train a BiLSTM-based subword segmenter model to tokenize NMT input (i.e., only source) sentences
+
+#+BEGIN_SRC bash
+% bisw-input-sents-preprocess \
+      -s ja \
+      --trainpref data/train \
+      --validpref data/valid \
+      --testpref data/test \
+      --destdir binarized/
+
+# train a segmenter model with using fairseq
+% export CUDA_VISIBLE_DEVICES=0
+% fairseq-train \
+      --user-dir bisw/for_input_sents/ \
+      --task bisw_segmentation \
+      --arch bilstm_segmenter \
+      --criterion cross_entropy \
+      --lr 1e-3 \
+      --optimizer adam --adam-betas '(0.9, 0.98)' \
+      --dropout 0.1 \
+      --no-epoch-checkpoints \
+      --batch-size 256 \
+      --max-epoch 20 \
+      --save-dir segmenter_model/ \
+      binarized/
+#+END_SRC
+
+*** 4. Apply BiSW segmentation to NMT inputs (test set's source sentences)
+#+BEGIN_SRC bash
+% bisw-input-sents-segmentation \
+      --task bisw_segmentation \
+      --buffer-size 256 \
+      --batch-size 256 \
+      --path segmenter_model/checkpoint_last.pt \
+      --spm-model spm/ja.model \
+      --spm-nbest 5 \
+      --input examples/test.ja \
+      binarized/ | \
+      grep "^D-" | \
+      sort -V | \
+      cut -f3 \
+      > data/test.ja
+#+END_SRC
+- =--input= option is set to raw text (not tokenized sentences).
+- If you need verbose outputs, remove =grep=, =sort=, =cut= commands.
+
+** Citation
+#+BEGIN_SRC bibtex
+@inproceedings{deguchi-etal-2020-bilingual,
+    title = "Bilingual Subword Segmentation for Neural Machine Translation",
+    author = "Deguchi, Hiroyuki  and
+      Utiyama, Masao  and
+      Tamura, Akihiro  and
+      Ninomiya, Takashi  and
+      Sumita, Eiichiro",
+    booktitle = "Proceedings of the 28th International Conference on Computational Linguistics (COLING'2020)",
+    month = dec,
+    year = "2020",
+    address = "Barcelona, Spain (Online)",
+    pages = "4287--4297",
+}
+#+END_SRC
