@@ -47,6 +47,23 @@ This repository is an implementation of [[https://www.aclweb.org/anthology/2020.
   cut -f2 data/valid.tsv > data/valid.en
 #+END_SRC
 
+If you have learned SentencePiece models, you can also use them by removing =--train-spm= option.
+#+BEGIN_SRC bash
+% bisw-parallel-sents-segmentation \
+      -s ja -t en \
+      --trainpref examples/train \
+      --spm-dir spm/ \
+      --nbest-size 5 \
+      --num-workers 8 \
+      --batch-size 1000 \
+      > data/train.tsv
+#+END_SRC
+In this case, the model files placed in the =--spm-dir= directory must be named =`language code'.model=, as follows:
+#+BEGIN_SRC bash
+% ls spm/
+ja.model  en.model
+#+END_SRC
+
 *** 2. Train a NMT model with =data/train.{ja,en}=
 
 *** 3. Next, train a BiLSTM-based subword segmenter model to tokenize NMT input (i.e., only source) sentences
