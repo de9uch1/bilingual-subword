@@ -6,10 +6,10 @@ authors = ["Hiroyuki Deguchi <deguchi@ai.cs.ehime-u.ac.jp>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.9"
 fairseq = "^0.10.1"
 sentencepiece = "^0.1.94"
-torch = "^1.6.0"
+torch = "^2.4.1"
 numpy = "^1.19.4"
 
 [tool.poetry.dev-dependencies]
